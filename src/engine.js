@@ -51,6 +51,8 @@ var gameObj = function(posX, posY, sizeW, sizeH, imgSrc, tag, lvl){
 	this.dir = getRandomInt(1,8);
 	this.dirTimer = getRandomInt(80,160);
 	this.arDir = 0;
+	this.spHp = 5;
+	this.spTimer = getRandomInt(120,640);
 }
 
 gameObj.prototype.wallCheck = function(newX, newY, width, height){
@@ -82,7 +84,7 @@ gameObj.prototype.enemyCheck = function(){
 		}
 	}else if(this.type == "enemy1" || this.type == "enemy2"){
 		for(var i = 0; i < objList.length; i++){
-			if(objList[i].type == "projectile"){
+			if(objList[i].type == "projectile" || objList[i].type == "fallPit"){
 				var other = objList[i];
 				if(this.x < other.x + other.width && 
 					this.x + this.width > other.x &&
@@ -105,6 +107,14 @@ gameObj.prototype.enemyCheck = function(){
 					return true;
 				}
 			}
+		}
+	}else if(this.type == "fallPit"){
+		var other = player;
+		if(this.x+16 < other.x + other.width && 
+			this.x + this.width - 16 > other.x &&
+			this.y + 16 < other.y + other.height &&
+			this.y + this.height - 16 > other.y){
+			return true;
 		}
 	}
 	return false;
@@ -168,7 +178,16 @@ gameObj.prototype.think = function(mod, type){
 			}
 			break;
 		case "fallPit":
-			this.enemyCheck();
+			if(this.enemyCheck()){
+				hp = -1;
+			}
+			break;
+		case "enSpawn":
+			this.spTimer--;
+			if(this.spTimer <= 0){
+				this.spTimer = getRandomInt(120,240);
+				createObj(this.x,this.y,this.width,this.height,"img/testEnemy.png", "enemy1",level)
+			}
 			break;
 	}
 }
@@ -289,14 +308,20 @@ var levelRead = function(lvl){
 			switch(lvl[i][j]){
 				case 1:
 					createWall((32*j),(32*i),32,32);
-					continue;
+					break;
 				case 2:
 					player.x = (32*j);
 					player.y = (32*i);
-					continue;
+					break;
 				case 3:
 					createObj((32*j),(32*i),32,32,"img/testEnemy.png", "enemy1", level);
-					continue;
+					break;
+				case 4:
+					createObj((32*j),(32*i),32,32,"img/hitState.png", "enSpawn",level);
+					break;
+				case 5:
+					createObj((32*j),(32*i),32,32,"img/testPit.png", "fallPit",level);
+					break;
 			}
 		}
 	}
