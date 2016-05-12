@@ -52,7 +52,7 @@ var gameObj = function(posX, posY, sizeW, sizeH, imgSrc, tag, lvl){
 	this.dirTimer = getRandomInt(80,160);
 	this.arDir = 0;
 	this.spHp = 5;
-	this.spTimer = getRandomInt(120,640);
+	this.spTimer = getRandomInt(300,750);
 }
 
 gameObj.prototype.wallCheck = function(newX, newY, width, height){
@@ -108,7 +108,7 @@ gameObj.prototype.enemyCheck = function(){
 				}
 			}
 		}
-	}else if(this.type == "fallPit"){
+	}else if(this.type == "fallPit" || this.type == "leveler" || this.type == "ender"){
 		var other = player;
 		if(this.x+16 < other.x + other.width && 
 			this.x + this.width - 16 > other.x &&
@@ -185,10 +185,39 @@ gameObj.prototype.think = function(mod, type){
 		case "enSpawn":
 			this.spTimer--;
 			if(this.spTimer <= 0){
-				this.spTimer = getRandomInt(120,240);
+				this.spTimer = getRandomInt(300,7500);
 				createObj(this.x,this.y,this.width,this.height,"img/testEnemy.png", "enemy1",level)
 			}
 			break;
+		case "leveler":
+			if(this.enemyCheck()){
+				if(this.level == level10 && arrow == 1){
+					lvlState = 1;
+				}
+				if(this.level == level20 && dash == 1){
+					lvlState = 2;
+				}
+				if((this.level == level10 && arrow == 1) || (this.level == level20 && dash == 1) || (this.level != level10 && this.level != level20)){
+					level = this.level;
+					reset();
+				}
+			}
+			break;
+		case "ender":
+			if(this.enemyCheck()){
+				if(this.level == 1){
+					arrow = 0;
+					level = level0;
+					lvlState = 0;
+					reset();
+				}
+				if(this.level == 2){
+					dash = 0;
+					level = level0;
+					lvlState = 0;
+					reset();
+				}
+			}
 	}
 }
 gameObj.prototype.move = function(mod){
@@ -300,6 +329,8 @@ bgImage.onload = function(){
 	bgReady = true;
 };
 bgImage.src = "img/background.png";
+
+
 // level reading
 var levelRead = function(lvl){
 	for(var i = 0; i < lvl.length; i++){
@@ -322,12 +353,49 @@ var levelRead = function(lvl){
 				case 5:
 					createObj((32*j),(32*i),32,32,"img/testPit.png", "fallPit",level);
 					break;
+				case 6:
+					createObj((32*j),(32*i),32,32,"img/testGoal.png", "ender",1);
+					break;
+				case 7:
+					createObj((32*j),(32*i),32,32,"img/testGoal.png", "ender",2);
+					break;
+				case 10:
+					createObj((32*j),(32*i),32,32,"img/testUser.png", "leveler",level10);
+					break;
+				case 20:
+					createObj((32*j),(32*i),32,32,"img/testUser.png", "leveler",level20);
+					break;
+				case 11:
+					createObj((32*j),(32*i),32,32,"img/testUser.png", "leveler",level11);
+					break;
+				case 12:
+					createObj((32*j),(32*i),32,32,"img/testUser.png", "leveler",level12);
+					break;
+				case 13:
+					createObj((32*j),(32*i),32,32,"img/testUser.png", "leveler",level13);
+					break;
+				case 14:
+					createObj((32*j),(32*i),32,32,"img/testUser.png", "leveler",level14);
+					break;
+				case 21:
+					createObj((32*j),(32*i),32,32,"img/testUser.png", "leveler",level21);
+					break;
+				case 22:
+					createObj((32*j),(32*i),32,32,"img/testUser.png", "leveler",level22);
+					break;
+				case 23:
+					createObj((32*j),(32*i),32,32,"img/testUser.png", "leveler",level23);
+					break;
+				case 24:
+					createObj((32*j),(32*i),32,32,"img/testUser.png", "leveler",level24);
+					break;
 			}
 		}
 	}
 
 	hp = 3;
 }
+
 //event listeners
 addEventListener("keydown", function(e){
 	if(e.keyCode == 90){
@@ -403,6 +471,9 @@ addEventListener("keydown", function(e){
 			}
 		}
 	}
+	if(e.keyCode == 67){
+		hp = -1;
+	}
 	keysDown[e.keyCode] = true;
 }, false);
 
@@ -462,11 +533,18 @@ var update = function(mod){
 };
 
 // render stuff
+var controlZ = new Image();
+controlZ.src = "img/contolZ.png";
+var controlX = new Image();
+controlX.src = "img/contolX.png";
+var controlC = new Image();
+controlC.src = "img/controlC.png";
+var hpImg = new Image();
+hpImg.src = "img/hpPiece.png";
 var render = function(){
 	if (bgReady){
 		ctx.drawImage(bgImage, 0, 0);
 	}
-	ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
 	for(var i = 0; i < objList.length; i++){
 		if(objList[i] != ""){
 			ctx.drawImage(objList[i].image, objList[i].x, objList[i].y, objList[i].width, objList[i].height);
@@ -477,19 +555,23 @@ var render = function(){
 			ctx.drawImage(wallList[i].image, wallList[i].x, wallList[i].y, wallList[i].width, wallList[i].height)
 		}
 	}
+	ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
 	// score
-	
-	ctx.fillStyle = "rgb(250, 250, 250)";
-	ctx.font = "24px Helvetica";
-	ctx.textAlign = "left";
-	ctx.textBaseline = "top";
-	ctx.fillText("hp: " + hp, 32, 32)
+	if(dash == 1){
+		ctx.drawImage(controlZ,46-6, canvas.height - (2*46), 46,46);
+	}
+	if(arrow == 1){
+		ctx.drawImage(controlX,46 * 2, canvas.height - (2*46), 46,46);
+	}
+	ctx.drawImage(controlC,46 * 3 + 6, canvas.height - (2*46),46,46);
+	for(var i = 0; i < hp; i++){
+		ctx.drawImage(hpImg,i*24+8,4,24,24);
+	}
 	//ctx.fillText("state: " + plState + "/" + hitTimer, 32,64);
 };
 
 // the main game loop
 var main = function(){
-
 	var now = Date.now();
 	delta = now - then;
 
@@ -507,6 +589,11 @@ var start = function(){
 
 	if(player != null){ player = null; }
 	player = new gameObj(0,0,32,32,"img/testUser.png", "player", level);
+	if(lvlState == 1 && hp <= 0){
+		level = level10;
+	}else if(lvlState == 2 && hp <= 0){
+		level = level20;
+	}
 	levelRead(level);
 	main();
 
